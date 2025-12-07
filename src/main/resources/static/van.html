@@ -1,0 +1,171 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Steganography Frontend</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px;
+            background-color: #f0f8ff; /* Light background for beauty */
+        }
+        h1 {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #4CAF50; /* Greenish color for title */
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        /* Container for all sections */
+        .container {
+            display: flex;
+            gap: 40px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        /* Individual section styles */
+        .section {
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 24px;
+            width: 350px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            background: #fff;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .section:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #333;
+            text-align: center;
+        }
+        /* Remove default margin for labels and inputs for cleanliness */
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+            box-sizing: border-box;
+        }
+        button {
+            margin-top: 10px;
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        /* Style for output display */
+        .output {
+            font-weight: bold;
+            color: #d32f2f; /* Deep red for emphasis */
+            margin-top: 16px;
+            word-wrap: break-word;
+        }
+        /* Responsive adjustments */
+        @media(max-width: 800px){
+            .container {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+<h1>VanshStega</h1>
+<div class="container">
+    <!-- Hide Data Section -->
+    <div class="section">
+        <h2>Hide Data in Image</h2>
+        <form id="hide-form">
+            <label>Upload Image: <input type="file" id="hide-image" accept="image/*" required></label>
+            <label>Message to Hide: <input type="text" id="hide-data" required></label>
+            <button type="submit">Send</button>
+        </form>
+        <div id="hide-result"></div>
+    </div>
+
+    <!-- Extract Data Section -->
+    <div class="section">
+        <h2>Extract Data from Image</h2>
+        <form id="extract-form">
+            <label>Upload Image: <input type="file" id="extract-image" accept="image/*" required></label>
+            <button type="submit">Extract</button>
+        </form>
+        <div id="extract-output" class="output"></div>
+    </div>
+</div>
+
+<script>
+    // Hide Data
+    document.getElementById("hide-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const imgFile = document.getElementById("hide-image").files[0];
+        const data = document.getElementById("hide-data").value;
+        const formData = new FormData();
+        formData.append("image", imgFile);
+        formData.append("data", data);
+
+        const resp = await fetch("http://localhost:8080/hide", {
+            method: "POST",
+            body: formData
+        });
+
+        if (resp.ok) {
+            const blob = await resp.blob();
+            const url = URL.createObjectURL(blob);
+            document.getElementById("hide-result").innerHTML =
+                `<p>Stego image generated:</p>
+                <img src="${url}" width="200" style="display:block; margin-bottom:8px;" />
+                <a href="${url}" download="stego.png" style="font-weight:bold;">Download Stego Image</a>`;
+        } else {
+            document.getElementById("hide-result").textContent = "Error hiding data.";
+        }
+    });
+
+    // Extract Data
+    document.getElementById("extract-form").addEventListener("submit", async function(e) {
+        e.preventDefault();
+        const imgFile = document.getElementById("extract-image").files[0];
+        const formData = new FormData();
+        formData.append("image", imgFile);
+
+        try {
+            const resp = await fetch("http://localhost:8080/extract", {
+                method: "POST",
+                body: formData
+            });
+
+            if (resp.ok) {
+                const text = await resp.text();
+                document.getElementById("extract-output").textContent = text;
+            } else {
+                document.getElementById("extract-output").textContent = "Error extracting data.";
+            }
+        } catch (error) {
+            document.getElementById("extract-output").textContent = "Error: " + error.message;
+        }
+    });
+</script>
+</body>
+</html>
+
